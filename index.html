@@ -418,6 +418,31 @@
     background: rgba(0,212,255,0.08);
   }
 
+  /* VMG SUMMARY */
+  .vmg-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .vmg-tws {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+  .vmg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 2px 0;
+  }
+  .vmg-label { color: var(--muted); }
+  .vmg-val { color: var(--text); font-weight: bold; }
+
   /* TWA slider display */
   .twa-display {
     display: flex;
@@ -426,6 +451,83 @@
     color: var(--muted);
     margin-top: 4px;
   }
+
+  /* HELP TAB */
+  .help-section { padding: 4px 0; }
+  .help-para {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .help-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .help-step strong { color: var(--text); }
+  .help-num {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .help-marker-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .help-marker-icon {
+    flex-shrink: 0;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .help-marker-text {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .help-marker-text strong { color: var(--text); }
+  .help-formula {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    margin: 8px 0 10px;
+    border-radius: 0 4px 4px 0;
+  }
+  .help-term {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.05);
+    font-size: 12px;
+  }
+  .term-label {
+    flex-shrink: 0;
+    width: 44px;
+    color: var(--accent);
+    font-weight: bold;
+    letter-spacing: 0.05em;
+  }
+  .term-def { color: var(--muted); line-height: 1.5; }
+
 </style>
 </head>
 <body>
@@ -443,6 +545,7 @@
   <button onclick="showTab('polar')">&#9685; Polar</button>
   <button onclick="showTab('table')">&#9776; Table</button>
   <button onclick="showTab('log')">&#9782; Log</button>
+  <button onclick="showTab('help')">? Help</button>
 </nav>
 
 <main>
@@ -525,10 +628,11 @@
     <span id="rec-label">Start Recording</span>
   </button>
 
-  <div class="status-bar" id="status-bar" style="margin-top:12px; display:none;">
+  <div class="status-bar" id="status-bar" style="margin-top:12px; display:none; flex-wrap:wrap;">
     <span>Avg SOG: <span class="highlight" id="stat-avg">--</span> kts</span>
     <span>Max SOG: <span class="highlight" id="stat-max">--</span> kts</span>
     <span>TWA: <span class="highlight" id="stat-twa">--</span>°</span>
+    <span>TWS range: <span class="highlight" id="stat-tws-range">--</span> kts</span>
   </div>
 
   <button class="btn secondary" onclick="startGPS()">&#9728; Enable GPS</button>
@@ -544,6 +648,10 @@
     </div>
     <canvas id="polar-canvas"></canvas>
     <div class="legend" id="polar-legend"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Best VMG Angles</div>
+    <div id="vmg-summary"><div class="empty-state" style="padding:16px">Record sessions to calculate VMG</div></div>
   </div>
   <div class="card">
     <div class="card-title">Filter by Sail Config</div>
@@ -585,6 +693,84 @@
   </div>
 </div>
 
+
+<!-- HELP TAB -->
+<div class="tab-panel" id="tab-help">
+
+  <div class="card">
+    <div class="card-title">How to use this app</div>
+    <div class="help-section">
+      <div class="help-step"><span class="help-num">1</span><div><strong>Set conditions</strong> on the Record tab — enter the True Wind Speed (TWS) and True Wind Direction (TWD). You can update these freely while recording and each data point will be stamped with the wind conditions at that moment.</div></div>
+      <div class="help-step"><span class="help-num">2</span><div><strong>Select your sail config</strong> — tap your mainsail reef, headsail, and any extras like spinnaker or Code 0.</div></div>
+      <div class="help-step"><span class="help-num">3</span><div><strong>Enable GPS</strong> then tap the orange Record button when you are settled on a steady heading and speed. Tap again to stop and save the session.</div></div>
+      <div class="help-step"><span class="help-num">4</span><div><strong>Repeat for many angles</strong> — sail upwind, reaching, and downwind legs in the same conditions to fill in the polar. The more sessions you record, the more complete your polars become.</div></div>
+      <div class="help-step"><span class="help-num">5</span><div><strong>Check the Polar and Table tabs</strong> to see your boat's performance envelope build up over time.</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Polar Diagram — Reading the chart</div>
+    <div class="help-section">
+      <p class="help-para">The polar diagram is a semicircle. The boat sits at the centre top. Distance from the centre = boat speed in knots. Angle from centre = True Wind Angle (TWA), where 0° is directly into the wind and 180° is directly downwind.</p>
+      <p class="help-para">Each coloured curve represents one True Wind Speed (TWS) band. A faster boat speed at a given angle pushes the curve further out from the centre.</p>
+
+      <div class="help-marker-row">
+        <div class="help-marker-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="#00d4ff" stroke-width="2"/></svg>
+        </div>
+        <div class="help-marker-text"><strong>Solid coloured curve</strong> — Average boat speed at that wind angle across all your recorded sessions. This is your typical, reliable performance.</div>
+      </div>
+
+      <div class="help-marker-row">
+        <div class="help-marker-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24"><polygon points="12,4 20,12 12,20 4,12" fill="none" stroke="#00d4ff" stroke-width="1.5"/></svg>
+        </div>
+        <div class="help-marker-text"><strong>Hollow diamond</strong> — Best speed ever recorded at that angle, when it is notably faster than your average. Shows your boat's ceiling on a good day.</div>
+      </div>
+
+      <div class="help-marker-row">
+        <div class="help-marker-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="#00d4ff"/><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="1.5"/></svg>
+        </div>
+        <div class="help-marker-text"><strong>Filled circle with white ring</strong> — Best VMG angle. This is the point of sail where you make the most progress directly upwind or downwind. Sail here when beating or running, not at 0° or 180°.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">VMG — Velocity Made Good</div>
+    <div class="help-section">
+      <p class="help-para">VMG measures how fast you are actually moving <em>toward</em> your destination, as opposed to through the water at an angle. It is calculated as:</p>
+      <div class="help-formula">VMG = Boat Speed × cos(TWA)</div>
+      <p class="help-para">Sailing directly into the wind gives zero boat speed, so VMG = 0. Sailing at 90° gives good speed but zero upwind progress. The best VMG angle is the sweet spot in between — typically 35°–50° upwind and 140°–165° downwind depending on your boat.</p>
+      <p class="help-para">The Best VMG Angles card on the Polar tab tells you the exact angle and VMG speed for each wind strength. Use these numbers to decide when to tack or gybe for maximum performance.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Table Tab</div>
+    <div class="help-section">
+      <p class="help-para">The table shows average boat speed (AVG) and VMG for every combination of True Wind Angle (rows) and True Wind Speed (columns). The fastest speed in each row is highlighted in green.</p>
+      <p class="help-para">The bottom two rows show the best upwind VMG angle (green) and best downwind VMG angle (amber) for each wind strength — these are your target angles for racing or efficient passagemaking.</p>
+      <p class="help-para">Tap Export CSV to save the full table to a spreadsheet.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Key Terms</div>
+    <div class="help-section">
+      <div class="help-term"><span class="term-label">TWS</span><span class="term-def">True Wind Speed — wind speed relative to the water, not the boat.</span></div>
+      <div class="help-term"><span class="term-label">TWA</span><span class="term-def">True Wind Angle — angle between your heading and the true wind. 0° = head to wind, 180° = dead downwind.</span></div>
+      <div class="help-term"><span class="term-label">TWD</span><span class="term-def">True Wind Direction — compass direction the wind is coming from.</span></div>
+      <div class="help-term"><span class="term-label">SOG</span><span class="term-def">Speed Over Ground — your actual speed measured by GPS.</span></div>
+      <div class="help-term"><span class="term-label">COG</span><span class="term-def">Course Over Ground — your actual heading measured by GPS.</span></div>
+      <div class="help-term"><span class="term-label">VMG</span><span class="term-def">Velocity Made Good — your speed of progress directly toward (upwind) or away from (downwind) the wind source.</span></div>
+      <div class="help-term"><span class="term-label">Polar</span><span class="term-def">A chart showing your boat's speed at every wind angle and wind speed — the complete performance map of the boat.</span></div>
+    </div>
+  </div>
+
+</div>
+
 </main>
 
 <div id="toast"></div>
@@ -607,7 +793,7 @@ function showTab(name) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   const buttons = document.querySelectorAll('nav button');
-  const idx = ['record','polar','table','log'].indexOf(name);
+  const idx = ['record','polar','table','log','help'].indexOf(name);
   buttons[idx].classList.add('active');
   if (name === 'polar') renderPolar();
   if (name === 'table') renderTable();
@@ -702,9 +888,14 @@ function updateRunStats() {
   const max = Math.max(...sogs).toFixed(1);
   const twas = currentRun.map(r => r.twa);
   const avgTwa = Math.round(twas.reduce((a,b)=>a+b,0)/twas.length);
+  const twsList = currentRun.map(r => r.tws);
+  const twsMin = Math.min(...twsList).toFixed(1);
+  const twsMax = Math.max(...twsList).toFixed(1);
+  const twsRange = twsMin === twsMax ? twsMin : twsMin + '–' + twsMax;
   document.getElementById('stat-avg').textContent = avg;
   document.getElementById('stat-max').textContent = max;
   document.getElementById('stat-twa').textContent = avgTwa;
+  document.getElementById('stat-tws-range').textContent = twsRange;
   document.getElementById('status-bar').style.display = 'flex';
 }
 
@@ -732,13 +923,19 @@ function toggleRecording() {
 
 function saveSession() {
   const cfg = getSailConfig();
-  const tws = parseFloat(document.getElementById('tws').value) || 0;
   const sogs = currentRun.map(r => r.sog);
   const twas = currentRun.map(r => r.twa);
+  const twsList = currentRun.map(r => r.tws);
+  // Average TWS across all points — handles wind changes mid-session
+  const avgTws = parseFloat((twsList.reduce((a,b)=>a+b,0)/twsList.length).toFixed(1));
+  const twsMin = parseFloat(Math.min(...twsList).toFixed(1));
+  const twsMax = parseFloat(Math.max(...twsList).toFixed(1));
   const session = {
     id: Date.now(),
     ts: new Date().toISOString(),
-    tws,
+    tws: avgTws,
+    twsMin,
+    twsMax,
     avgTwa: Math.round(twas.reduce((a,b)=>a+b,0)/twas.length),
     avgSog: parseFloat((sogs.reduce((a,b)=>a+b,0)/sogs.length).toFixed(2)),
     maxSog: parseFloat(Math.max(...sogs).toFixed(2)),
@@ -782,23 +979,56 @@ const TWS_BANDS = [6, 10, 14, 18, 24];
 const COLORS = ['#00d4ff', '#00e676', '#ffab40', '#ff6b35', '#e040fb'];
 const TWA_STEPS = [30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180];
 
-function getBestSog(tws_band, twa_target, filterMain, filterHead) {
-  const bw = 4;
-  const tw = 5;
-  let best = 0;
+// ============================================================
+// DATA AGGREGATION — avg + best + VMG
+// ============================================================
+function getPoints(tws_band, twa_target, filterMain, filterHead) {
+  const bw = 4, tw = 5;
+  const pts = [];
   for (const s of sessions) {
     if (filterMain && s.config.main !== filterMain) continue;
     if (filterHead && s.config.head !== filterHead) continue;
     if (Math.abs(s.tws - tws_band) > bw) continue;
     for (const pt of s.data) {
-      if (Math.abs(pt.twa - twa_target) <= tw) {
-        if (pt.sog > best) best = pt.sog;
-      }
+      if (Math.abs(pt.twa - twa_target) <= tw) pts.push(pt.sog);
     }
   }
-  return best;
+  return pts;
 }
 
+function getAvgSog(tws_band, twa_target, filterMain, filterHead) {
+  const pts = getPoints(tws_band, twa_target, filterMain, filterHead);
+  if (!pts.length) return 0;
+  return pts.reduce((a,b) => a+b, 0) / pts.length;
+}
+
+function getBestSog(tws_band, twa_target, filterMain, filterHead) {
+  const pts = getPoints(tws_band, twa_target, filterMain, filterHead);
+  return pts.length ? Math.max(...pts) : 0;
+}
+
+function calcVMG(sog, twa) {
+  const rad = twa * Math.PI / 180;
+  return sog * Math.cos(rad); // positive = upwind, negative = downwind
+}
+
+function getBestVMG(tws_band, filterMain, filterHead) {
+  let bestUp = { vmg: 0, twa: null, sog: 0 };
+  let bestDown = { vmg: 0, twa: null, sog: 0 };
+  for (const twa of TWA_STEPS) {
+    const sog = getAvgSog(tws_band, twa, filterMain, filterHead);
+    if (!sog) continue;
+    const vmgUp = calcVMG(sog, twa);
+    const vmgDown = -calcVMG(sog, twa); // downwind VMG (away from wind)
+    if (twa <= 90 && vmgUp > bestUp.vmg) bestUp = { vmg: vmgUp, twa, sog };
+    if (twa >= 90 && vmgDown > bestDown.vmg) bestDown = { vmg: vmgDown, twa, sog };
+  }
+  return { bestUp, bestDown };
+}
+
+// ============================================================
+// POLAR RENDERING
+// ============================================================
 function renderPolar() {
   const canvas = document.getElementById('polar-canvas');
   const ctx = canvas.getContext('2d');
@@ -812,15 +1042,14 @@ function renderPolar() {
   const fMain = document.getElementById('filter-main')?.value || '';
   const fHead = document.getElementById('filter-head')?.value || '';
 
-  // find max speed for scale
+  // Compute avg and best for all bands
   let maxSpd = 0;
-  const bandData = TWS_BANDS.map(tws => {
-    return TWA_STEPS.map(twa => {
-      const v = getBestSog(tws, twa, fMain, fHead);
-      if (v > maxSpd) maxSpd = v;
-      return v;
-    });
-  });
+  const avgData = TWS_BANDS.map(tws =>
+    TWA_STEPS.map(twa => { const v = getAvgSog(tws, twa, fMain, fHead); if (v > maxSpd) maxSpd = v; return v; })
+  );
+  const bestData = TWS_BANDS.map(tws =>
+    TWA_STEPS.map(twa => { const v = getBestSog(tws, twa, fMain, fHead); if (v > maxSpd) maxSpd = v; return v; })
+  );
   if (maxSpd < 1) maxSpd = 12;
   const scale = R / maxSpd;
 
@@ -837,7 +1066,7 @@ function renderPolar() {
     ctx.fillText(spd+'kts', cx + r + 3, cy + 2);
   }
 
-  // Grid lines (angle spokes)
+  // Grid spokes
   ctx.strokeStyle = 'rgba(0,212,255,0.07)';
   for (let a = 0; a <= 180; a += 30) {
     const rad = (a - 90) * Math.PI / 180;
@@ -845,18 +1074,12 @@ function renderPolar() {
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(rad)*R, cy + Math.sin(rad)*R);
     ctx.stroke();
-    // angle labels
     ctx.fillStyle = 'rgba(107,143,168,0.8)';
     ctx.font = '9px Courier New';
-    const lx = cx + Math.cos(rad)*(R+12);
-    const ly = cy + Math.sin(rad)*(R+12);
-    ctx.fillText(a+'°', lx-8, ly+4);
+    ctx.fillText(a+'°', cx + Math.cos(rad)*(R+12) - 8, cy + Math.sin(rad)*(R+12) + 4);
   }
 
-  // Check if we have any data
-  const hasData = sessions.length > 0;
-
-  if (!hasData) {
+  if (!sessions.length) {
     ctx.fillStyle = 'rgba(107,143,168,0.6)';
     ctx.font = '12px Courier New';
     ctx.textAlign = 'center';
@@ -865,54 +1088,106 @@ function renderPolar() {
     return;
   }
 
-  // Draw polar curves
+  // Draw curves: avg (solid) + best (dashed) + VMG markers
+  const vmgSummary = [];
   for (let bi = 0; bi < TWS_BANDS.length; bi++) {
-    const data = bandData[bi];
-    if (data.every(v => v === 0)) continue;
+    const avg = avgData[bi];
+    const best = bestData[bi];
+    if (avg.every(v => v === 0)) continue;
+    const color = COLORS[bi];
 
+    // Average curve — solid
     ctx.beginPath();
-    ctx.strokeStyle = COLORS[bi];
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2;
+    ctx.setLineDash([]);
     let first = true;
     for (let ti = 0; ti < TWA_STEPS.length; ti++) {
-      const twa = TWA_STEPS[ti];
-      const spd = data[ti];
-      if (spd === 0) { first = true; continue; }
-      const rad = (twa - 90) * Math.PI / 180;
-      const r = spd * scale;
-      const px = cx + Math.cos(rad) * r;
-      const py = cy + Math.sin(rad) * r;
-      if (first) { ctx.moveTo(px, py); first = false; }
-      else ctx.lineTo(px, py);
+      const spd = avg[ti];
+      if (!spd) { first = true; continue; }
+      const rad = (TWA_STEPS[ti] - 90) * Math.PI / 180;
+      const px = cx + Math.cos(rad) * spd * scale;
+      const py = cy + Math.sin(rad) * spd * scale;
+      if (first) { ctx.moveTo(px, py); first = false; } else ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // Dots for data points
+    // Best markers — small hollow diamonds
+    ctx.setLineDash([]);
     for (let ti = 0; ti < TWA_STEPS.length; ti++) {
-      const twa = TWA_STEPS[ti];
-      const spd = data[ti];
-      if (spd === 0) continue;
-      const rad = (twa - 90) * Math.PI / 180;
-      const r = spd * scale;
+      const bspd = best[ti];
+      const aspd = avg[ti];
+      if (!bspd || !aspd) continue;
+      if ((bspd - aspd) < 0.05) continue; // only show if meaningfully above avg
+      const rad = (TWA_STEPS[ti] - 90) * Math.PI / 180;
+      const r = bspd * scale;
+      const px = cx + Math.cos(rad) * r;
+      const py = cy + Math.sin(rad) * r;
+      const d = 4;
       ctx.beginPath();
-      ctx.arc(cx + Math.cos(rad)*r, cy + Math.sin(rad)*r, 3, 0, 2*Math.PI);
-      ctx.fillStyle = COLORS[bi];
+      ctx.moveTo(px, py - d);
+      ctx.lineTo(px + d, py);
+      ctx.lineTo(px, py + d);
+      ctx.lineTo(px - d, py);
+      ctx.closePath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // VMG markers
+    const { bestUp, bestDown } = getBestVMG(TWS_BANDS[bi], fMain, fHead);
+    vmgSummary.push({ bi, color, tws: TWS_BANDS[bi], bestUp, bestDown });
+
+    for (const vmgPt of [bestUp, bestDown]) {
+      if (!vmgPt.twa) continue;
+      const rad = (vmgPt.twa - 90) * Math.PI / 180;
+      const r = vmgPt.sog * scale;
+      const px = cx + Math.cos(rad) * r;
+      const py = cy + Math.sin(rad) * r;
+      // Draw VMG star marker
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, 2*Math.PI);
+      ctx.fillStyle = color;
       ctx.fill();
+      ctx.beginPath();
+      ctx.arc(px, py, 7, 0, 2*Math.PI);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
   }
+
+  ctx.setLineDash([]);
 
   // Legend
   const legendEl = document.getElementById('polar-legend');
   legendEl.innerHTML = '';
   for (let bi = 0; bi < TWS_BANDS.length; bi++) {
-    const data = bandData[bi];
-    if (data.every(v => v === 0)) continue;
-    legendEl.innerHTML += `
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:${COLORS[bi]}"></div>
-        ${TWS_BANDS[bi]}kts TWS
-      </div>`;
+    if (avgData[bi].every(v => v === 0)) continue;
+    legendEl.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:${COLORS[bi]}"></div>${TWS_BANDS[bi]}kts</div>`;
   }
+  legendEl.innerHTML += `
+    <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #888;flex-shrink:0;"></div>Best VMG</div>
+    <div class="legend-item"><div style="width:10px;height:10px;transform:rotate(45deg);border:1.5px solid #888;flex-shrink:0;"></div>Best recorded</div>`;
+
+  // VMG summary cards
+  renderVMGSummary(vmgSummary);
+}
+
+function renderVMGSummary(vmgSummary) {
+  let el = document.getElementById('vmg-summary');
+  if (!el) return;
+  if (!vmgSummary.length) { el.innerHTML = ''; return; }
+  el.innerHTML = vmgSummary.map(v => {
+    const up = v.bestUp.twa ? `${v.bestUp.twa}° / ${v.bestUp.vmg.toFixed(1)}kts` : '—';
+    const dn = v.bestDown.twa ? `${v.bestDown.twa}° / ${v.bestDown.vmg.toFixed(1)}kts` : '—';
+    return `<div class="vmg-card">
+      <div class="vmg-tws" style="color:${v.color}">${v.tws}kts TWS</div>
+      <div class="vmg-row"><span class="vmg-label">&#8679; Best upwind VMG</span><span class="vmg-val">${up}</span></div>
+      <div class="vmg-row"><span class="vmg-label">&#8681; Best downwind VMG</span><span class="vmg-val">${dn}</span></div>
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
@@ -922,31 +1197,60 @@ function renderTable() {
   const thead = document.querySelector('#polar-table thead');
   const tbody = document.querySelector('#polar-table tbody');
 
-  const headers = ['TWA \\ TWS', ...TWS_BANDS.map(t => t+'kts')];
-  thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  const twsCols = TWS_BANDS.map(t => t+'kts');
+  thead.innerHTML = '<tr><th>TWA</th>' + twsCols.map(h =>
+    `<th colspan="2" style="border-left:1px solid rgba(0,212,255,0.1)">${h}</th>`).join('') + '</tr>' +
+    '<tr><th></th>' + TWS_BANDS.map(() =>
+    `<th style="font-size:8px;border-left:1px solid rgba(0,212,255,0.1)">AVG</th><th style="font-size:8px">VMG</th>`).join('') + '</tr>';
 
   let html = '';
   for (const twa of TWA_STEPS) {
-    const cells = TWS_BANDS.map(tws => getBestSog(tws, twa, '', ''));
-    const maxCell = Math.max(...cells);
-    const row = cells.map(v => {
-      if (v === 0) return '<td style="color:rgba(107,143,168,0.3)">—</td>';
-      const cls = v === maxCell && v > 0 ? 'class="best"' : '';
-      return `<td ${cls}>${v.toFixed(1)}</td>`;
+    const rad = twa * Math.PI / 180;
+    let cells = '';
+    let rowMax = 0;
+    const avgs = TWS_BANDS.map(tws => getAvgSog(tws, twa, '', ''));
+    avgs.forEach(v => { if (v > rowMax) rowMax = v; });
+
+    TWS_BANDS.forEach((tws, i) => {
+      const avg = avgs[i];
+      const vmg = avg ? Math.abs(calcVMG(avg, twa)).toFixed(1) : 0;
+      const isBest = avg === rowMax && avg > 0;
+      const avgStr = avg ? `<span${isBest ? ' class="best"' : ''}>${avg.toFixed(1)}</span>` : '<span style="color:rgba(107,143,168,0.3)">—</span>';
+      const vmgStr = vmg > 0 ? `<span style="color:var(--warn)">${vmg}</span>` : '<span style="color:rgba(107,143,168,0.3)">—</span>';
+      cells += `<td style="border-left:1px solid rgba(0,212,255,0.08)">${avgStr}</td><td>${vmgStr}</td>`;
     });
-    html += `<tr><td class="twa-col">${twa}°</td>${row.join('')}</tr>`;
+    html += `<tr><td class="twa-col">${twa}°</td>${cells}</tr>`;
   }
-  tbody.innerHTML = html || '<tr><td colspan="6" style="color:var(--muted);padding:20px;text-align:center">No data yet</td></tr>';
+
+  // Best VMG rows
+  html += `<tr style="border-top:1px solid rgba(0,212,255,0.2)"><td class="twa-col" style="color:var(--accent);font-size:9px">&#8679;VMG°</td>` +
+    TWS_BANDS.map(tws => {
+      const { bestUp } = getBestVMG(tws, '', '');
+      return `<td colspan="2" style="color:var(--success);font-size:10px;border-left:1px solid rgba(0,212,255,0.08)">${bestUp.twa ? bestUp.twa+'°' : '—'}</td>`;
+    }).join('') + '</tr>';
+  html += `<tr><td class="twa-col" style="color:var(--accent);font-size:9px">&#8681;VMG°</td>` +
+    TWS_BANDS.map(tws => {
+      const { bestDown } = getBestVMG(tws, '', '');
+      return `<td colspan="2" style="color:var(--warn);font-size:10px;border-left:1px solid rgba(0,212,255,0.08)">${bestDown.twa ? bestDown.twa+'°' : '—'}</td>`;
+    }).join('') + '</tr>';
+
+  tbody.innerHTML = html || `<tr><td colspan="${1 + TWS_BANDS.length*2}" style="color:var(--muted);padding:20px;text-align:center">No data yet</td></tr>`;
 }
 
 // ============================================================
 // CSV EXPORT
 // ============================================================
 function exportCSV() {
-  const rows = [['TWA', ...TWS_BANDS.map(t => t+'kts TWS')]];
+  const rows = [['TWA', ...TWS_BANDS.flatMap(t => [t+'kts AVG', t+'kts VMG'])]];
   for (const twa of TWA_STEPS) {
-    rows.push([twa, ...TWS_BANDS.map(tws => getBestSog(tws, twa, '', '') || '')]);
+    rows.push([twa, ...TWS_BANDS.flatMap(tws => {
+      const avg = getAvgSog(tws, twa, '', '');
+      const vmg = avg ? Math.abs(calcVMG(avg, twa)).toFixed(2) : '';
+      return [avg ? avg.toFixed(2) : '', vmg];
+    })]);
   }
+  rows.push(['Best Upwind VMG angle', ...TWS_BANDS.map(tws => getBestVMG(tws,'','').bestUp.twa || '')]);
+  rows.push(['Best Downwind VMG angle', ...TWS_BANDS.map(tws => getBestVMG(tws,'','').bestDown.twa || '')]);
   const csv = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
@@ -974,7 +1278,7 @@ function renderLog() {
     return `
       <div class="log-item" onclick="deleteSession(${s.id})">
         <div class="log-item-header">
-          <span class="log-badge">${s.tws}kts TWS</span>
+          <span class="log-badge">${s.twsMin && s.twsMin !== s.twsMax ? s.twsMin+'–'+s.twsMax : s.tws}kts TWS</span>
           <span class="log-meta">${date}</span>
         </div>
         <div class="log-stats">
