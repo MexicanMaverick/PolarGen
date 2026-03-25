@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a1628">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Polar Generator</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+</script>
+<style>
+  :root {
+    --bg: #0a1628;
+    --surface: #0f2040;
+    --surface2: #162b52;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --text: #e8f4fd;
+    --muted: #6b8fa8;
+    --border: rgba(0,212,255,0.15);
+    --success: #00e676;
+    --warn: #ffab40;
+    --font: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { font-size: 16px; letter-spacing: 0.15em; color: var(--accent); font-weight: bold; }
+  .logo span { color: var(--muted); font-weight: normal; }
+  #gps-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
+  .dot.error { background: var(--accent2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* NAV TABS */
+  nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  nav button {
+    flex: 1;
+    padding: 10px 4px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* MAIN CONTENT */
+  main { padding: 16px; max-width: 600px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  /* LIVE INSTRUMENTS */
+  .instruments {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .instrument {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .instr-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .instr-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .instr-unit {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* FORM INPUTS */
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 9px 10px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+  }
+  .field select option { background: var(--surface); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* BUTTONS */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #0a1628;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    margin-top: 8px;
+  }
+  .btn.danger {
+    background: transparent;
+    border: 1px solid #e24b4a;
+    color: #e24b4a;
+    margin-top: 8px;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* RECORDING */
+  .record-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 2px solid var(--accent2);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .record-btn.recording {
+    border-color: #e24b4a;
+    color: #e24b4a;
+    animation: blink-border 1s infinite;
+  }
+  @keyframes blink-border { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .rec-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+  }
+  .record-btn.recording .rec-dot {
+    background: #e24b4a;
+    animation: pulse 0.8s infinite;
+  }
+
+  /* POLAR CANVAS */
+  #polar-canvas {
+    width: 100%;
+    aspect-ratio: 1;
+    display: block;
+  }
+
+  /* DATA TABLE */
+  .polar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .polar-table th {
+    color: var(--accent);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .polar-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid rgba(0,212,255,0.05);
+    text-align: center;
+    color: var(--text);
+  }
+  .polar-table tr:hover td { background: var(--surface2); }
+  .polar-table .twa-col { color: var(--muted); font-size: 10px; }
+  .polar-table .best { color: var(--success); font-weight: bold; }
+
+  /* LOG ENTRIES */
+  .log-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .log-item:hover { border-color: var(--accent); }
+  .log-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .log-badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .log-meta { font-size: 10px; color: var(--muted); }
+  .log-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text);
+    margin-top: 4px;
+  }
+  .log-stats span { color: var(--muted); font-size: 9px; }
+
+  /* STATUS BAR */
+  .status-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .status-bar .highlight { color: var(--accent); }
+
+  /* INFO BOX */
+  .info-box {
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .info-box strong { color: var(--accent); }
+
+  /* TWS LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .legend-swatch {
+    width: 20px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    transition: transform 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  /* SAIL CONFIG TAGS */
+  .config-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .tag {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tag.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+  }
+
+  /* TWA slider display */
+  .twa-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">POLAR<span>GEN</span></div>
+  <div id="gps-status">
+    <div class="dot" id="gps-dot"></div>
+    <span id="gps-label">GPS OFF</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('record')">&#9679; Record</button>
+  <button onclick="showTab('polar')">&#9685; Polar</button>
+  <button onclick="showTab('table')">&#9776; Table</button>
+  <button onclick="showTab('log')">&#9782; Log</button>
+</nav>
+
+<main>
+
+<!-- RECORD TAB -->
+<div class="tab-panel active" id="tab-record">
+
+  <div class="instruments">
+    <div class="instrument">
+      <div class="instr-label">SOG</div>
+      <div class="instr-value" id="inst-sog">--</div>
+      <div class="instr-unit">knots</div>
+    </div>
+    <div class="instrument">
+      <div class="instr-label">COG</div>
+      <div class="instr-value" id="inst-cog">--</div>
+      <div class="instr-unit">degrees</div>
+    </div>
+    <div class="instrument">
+      <div class="instr-label">GPS Acc</div>
+      <div class="instr-value" id="inst-acc">--</div>
+      <div class="instr-unit">meters</div>
+    </div>
+    <div class="instrument">
+      <div class="instr-label">Samples</div>
+      <div class="instr-value" id="inst-samples">0</div>
+      <div class="instr-unit">this run</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Wind Conditions</div>
+    <div class="row2">
+      <div class="field">
+        <label>True Wind Speed (kts)</label>
+        <input type="number" id="tws" min="0" max="50" step="0.5" value="12" placeholder="12">
+      </div>
+      <div class="field">
+        <label>True Wind Direction (°)</label>
+        <input type="number" id="twd" min="0" max="359" step="1" value="270" placeholder="270">
+      </div>
+    </div>
+    <div class="field">
+      <label>True Wind Angle (TWA) — optional override (°)</label>
+      <input type="number" id="twa-override" min="0" max="180" step="1" placeholder="Auto-calc from COG &amp; TWD">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Sail Configuration</div>
+    <div class="field">
+      <label>Mainsail</label>
+      <div class="config-tags" id="main-tags">
+        <div class="tag selected" data-group="main" data-val="Full">Full</div>
+        <div class="tag" data-group="main" data-val="R1">Reef 1</div>
+        <div class="tag" data-group="main" data-val="R2">Reef 2</div>
+        <div class="tag" data-group="main" data-val="R3">Reef 3</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Headsail</label>
+      <div class="config-tags" id="head-tags">
+        <div class="tag selected" data-group="head" data-val="A1">A1</div>
+        <div class="tag" data-group="head" data-val="A2">A2</div>
+        <div class="tag" data-group="head" data-val="A3">A3</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Extras</label>
+      <div class="config-tags" id="extra-tags">
+        <div class="tag" data-group="extra" data-val="Code0" data-multi="true">Code 0</div>
+        <div class="tag" data-group="extra" data-val="BigSpin" data-multi="true">Big Spin</div>
+        <div class="tag" data-group="extra" data-val="SmallSpin" data-multi="true">Small Spin</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="record-btn" id="record-btn" onclick="toggleRecording()">
+    <div class="rec-dot"></div>
+    <span id="rec-label">Start Recording</span>
+  </button>
+
+  <div class="status-bar" id="status-bar" style="margin-top:12px; display:none;">
+    <span>Avg SOG: <span class="highlight" id="stat-avg">--</span> kts</span>
+    <span>Max SOG: <span class="highlight" id="stat-max">--</span> kts</span>
+    <span>TWA: <span class="highlight" id="stat-twa">--</span>°</span>
+  </div>
+
+  <button class="btn secondary" onclick="startGPS()">&#9728; Enable GPS</button>
+  <button class="btn danger" onclick="clearAllData()">&#9249; Clear All Data</button>
+</div>
+
+<!-- POLAR CHART TAB -->
+<div class="tab-panel" id="tab-polar">
+  <div class="card">
+    <div class="card-title">Polar Diagram</div>
+    <div class="info-box">
+      Boat speed (knots) vs true wind angle (0°=head,180°=run). Each curve = one TWS band. Record data on the Record tab to populate.
+    </div>
+    <canvas id="polar-canvas"></canvas>
+    <div class="legend" id="polar-legend"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Filter by Sail Config</div>
+    <div class="field">
+      <select id="filter-main">
+        <option value="">Any Mainsail</option>
+        <option>Full</option><option>R1</option><option>R2</option><option>R3</option>
+      </select>
+    </div>
+    <div class="field">
+      <select id="filter-head">
+        <option value="">Any Headsail</option>
+        <option>A1</option><option>A2</option><option>A3</option>
+      </select>
+    </div>
+    <button class="btn" onclick="renderPolar()">&#9200; Update Chart</button>
+  </div>
+</div>
+
+<!-- TABLE TAB -->
+<div class="tab-panel" id="tab-table">
+  <div class="card">
+    <div class="card-title">Polar Table — Best SOG by TWA &amp; TWS</div>
+    <div style="overflow-x:auto;">
+      <table class="polar-table" id="polar-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <button class="btn secondary" onclick="exportCSV()">&#8659; Export CSV</button>
+</div>
+
+<!-- LOG TAB -->
+<div class="tab-panel" id="tab-log">
+  <div class="card">
+    <div class="card-title">Session Log</div>
+    <div id="log-list"><div class="empty-state">No sessions recorded yet.<br>Head to the Record tab to start.</div></div>
+  </div>
+</div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let sessions = JSON.parse(localStorage.getItem('polar_sessions') || '[]');
+let gpsWatcher = null;
+let isRecording = false;
+let currentRun = [];
+let lastPos = null;
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const buttons = document.querySelectorAll('nav button');
+  const idx = ['record','polar','table','log'].indexOf(name);
+  buttons[idx].classList.add('active');
+  if (name === 'polar') renderPolar();
+  if (name === 'table') renderTable();
+  if (name === 'log') renderLog();
+}
+
+// ============================================================
+// SAIL CONFIG TAGS
+// ============================================================
+document.querySelectorAll('.tag').forEach(tag => {
+  tag.addEventListener('click', () => {
+    const group = tag.dataset.group;
+    const isMulti = tag.dataset.multi === 'true';
+    if (isMulti) {
+      tag.classList.toggle('selected');
+    } else {
+      document.querySelectorAll(`.tag[data-group="${group}"]`).forEach(t => t.classList.remove('selected'));
+      tag.classList.add('selected');
+    }
+  });
+});
+
+function getSailConfig() {
+  const main = document.querySelector('.tag[data-group="main"].selected')?.dataset.val || 'Full';
+  const head = document.querySelector('.tag[data-group="head"].selected')?.dataset.val || 'J1';
+  const extras = [...document.querySelectorAll('.tag[data-group="extra"].selected')].map(t => t.dataset.val);
+  return { main, head, extras };
+}
+
+// ============================================================
+// GPS
+// ============================================================
+function startGPS() {
+  if (!navigator.geolocation) { toast('GPS not available in this browser', true); return; }
+  if (gpsWatcher !== null) return;
+  gpsWatcher = navigator.geolocation.watchPosition(onGPS, onGPSErr, {
+    enableHighAccuracy: true,
+    maximumAge: 1000,
+    timeout: 10000
+  });
+  toast('GPS enabled');
+}
+
+function onGPS(pos) {
+  lastPos = pos;
+  const speedMs = pos.coords.speed || 0;
+  const sog = (speedMs * 1.94384).toFixed(1);
+  const cog = pos.coords.heading != null ? Math.round(pos.coords.heading) : '--';
+  const acc = Math.round(pos.coords.accuracy);
+
+  document.getElementById('inst-sog').textContent = sog;
+  document.getElementById('inst-cog').textContent = cog !== '--' ? cog : '--';
+  document.getElementById('inst-acc').textContent = acc;
+  document.getElementById('gps-dot').className = 'dot active';
+  document.getElementById('gps-label').textContent = 'GPS ON';
+
+  if (isRecording) {
+    const tws = parseFloat(document.getElementById('tws').value) || 0;
+    const twd = parseFloat(document.getElementById('twd').value) || 0;
+    const twaOverride = document.getElementById('twa-override').value;
+    let twa;
+    if (twaOverride !== '') {
+      twa = parseFloat(twaOverride);
+    } else {
+      const cogNum = pos.coords.heading;
+      if (cogNum != null) {
+        let diff = ((cogNum - twd) + 360) % 360;
+        twa = diff > 180 ? 360 - diff : diff;
+      } else {
+        twa = null;
+      }
+    }
+    if (twa !== null && speedMs >= 0) {
+      const sogKts = speedMs * 1.94384;
+      currentRun.push({ sog: sogKts, twa, tws, ts: Date.now() });
+      document.getElementById('inst-samples').textContent = currentRun.length;
+      updateRunStats();
+    }
+  }
+}
+
+function onGPSErr(err) {
+  document.getElementById('gps-dot').className = 'dot error';
+  document.getElementById('gps-label').textContent = 'GPS ERR';
+  toast('GPS error: ' + err.message, true);
+}
+
+function updateRunStats() {
+  if (!currentRun.length) return;
+  const sogs = currentRun.map(r => r.sog);
+  const avg = (sogs.reduce((a,b)=>a+b,0)/sogs.length).toFixed(1);
+  const max = Math.max(...sogs).toFixed(1);
+  const twas = currentRun.map(r => r.twa);
+  const avgTwa = Math.round(twas.reduce((a,b)=>a+b,0)/twas.length);
+  document.getElementById('stat-avg').textContent = avg;
+  document.getElementById('stat-max').textContent = max;
+  document.getElementById('stat-twa').textContent = avgTwa;
+  document.getElementById('status-bar').style.display = 'flex';
+}
+
+// ============================================================
+// RECORDING
+// ============================================================
+function toggleRecording() {
+  if (!isRecording) {
+    if (!lastPos) { toast('Enable GPS first!', true); return; }
+    isRecording = true;
+    currentRun = [];
+    document.getElementById('record-btn').classList.add('recording');
+    document.getElementById('rec-label').textContent = 'Recording... (tap to stop)';
+    document.getElementById('inst-samples').textContent = '0';
+    toast('Recording started');
+  } else {
+    isRecording = false;
+    document.getElementById('record-btn').classList.remove('recording');
+    document.getElementById('rec-label').textContent = 'Start Recording';
+    if (currentRun.length < 3) { toast('Not enough data (need 3+ samples)', true); return; }
+    saveSession();
+    toast('Session saved: ' + currentRun.length + ' samples');
+  }
+}
+
+function saveSession() {
+  const cfg = getSailConfig();
+  const tws = parseFloat(document.getElementById('tws').value) || 0;
+  const sogs = currentRun.map(r => r.sog);
+  const twas = currentRun.map(r => r.twa);
+  const session = {
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    tws,
+    avgTwa: Math.round(twas.reduce((a,b)=>a+b,0)/twas.length),
+    avgSog: parseFloat((sogs.reduce((a,b)=>a+b,0)/sogs.length).toFixed(2)),
+    maxSog: parseFloat(Math.max(...sogs).toFixed(2)),
+    samples: currentRun.length,
+    config: cfg,
+    data: currentRun.slice()
+  };
+  sessions.push(session);
+  localStorage.setItem('polar_sessions', JSON.stringify(sessions));
+}
+
+// ============================================================
+// MANUAL ENTRY (if no GPS)
+// ============================================================
+// Added as a sub-feature — users can tap the SOG value to enter manually
+document.getElementById('inst-sog').addEventListener('click', () => {
+  if (isRecording) return;
+  const val = prompt('Enter SOG (knots):');
+  if (val && !isNaN(parseFloat(val))) {
+    document.getElementById('inst-sog').textContent = parseFloat(val).toFixed(1);
+    // fake a position
+    const sog = parseFloat(val);
+    const tws = parseFloat(document.getElementById('tws').value)||0;
+    const twaO = document.getElementById('twa-override').value;
+    const twa = twaO !== '' ? parseFloat(twaO) : null;
+    if (twa !== null) {
+      currentRun.push({ sog, twa, tws, ts: Date.now() });
+      document.getElementById('inst-samples').textContent = currentRun.length;
+      updateRunStats();
+      toast('Point added manually');
+    } else {
+      toast('Set TWA override to log manually', true);
+    }
+  }
+});
+
+// ============================================================
+// POLAR RENDERING (Canvas)
+// ============================================================
+const TWS_BANDS = [6, 10, 14, 18, 24];
+const COLORS = ['#00d4ff', '#00e676', '#ffab40', '#ff6b35', '#e040fb'];
+const TWA_STEPS = [30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180];
+
+function getBestSog(tws_band, twa_target, filterMain, filterHead) {
+  const bw = 4;
+  const tw = 5;
+  let best = 0;
+  for (const s of sessions) {
+    if (filterMain && s.config.main !== filterMain) continue;
+    if (filterHead && s.config.head !== filterHead) continue;
+    if (Math.abs(s.tws - tws_band) > bw) continue;
+    for (const pt of s.data) {
+      if (Math.abs(pt.twa - twa_target) <= tw) {
+        if (pt.sog > best) best = pt.sog;
+      }
+    }
+  }
+  return best;
+}
+
+function renderPolar() {
+  const canvas = document.getElementById('polar-canvas');
+  const ctx = canvas.getContext('2d');
+  const size = canvas.offsetWidth;
+  canvas.width = size;
+  canvas.height = size;
+  const cx = size/2, cy = size*0.1, R = size*0.85;
+
+  ctx.clearRect(0, 0, size, size);
+
+  const fMain = document.getElementById('filter-main')?.value || '';
+  const fHead = document.getElementById('filter-head')?.value || '';
+
+  // find max speed for scale
+  let maxSpd = 0;
+  const bandData = TWS_BANDS.map(tws => {
+    return TWA_STEPS.map(twa => {
+      const v = getBestSog(tws, twa, fMain, fHead);
+      if (v > maxSpd) maxSpd = v;
+      return v;
+    });
+  });
+  if (maxSpd < 1) maxSpd = 12;
+  const scale = R / maxSpd;
+
+  // Grid rings
+  const rings = [2,4,6,8,10,12].filter(v => v <= maxSpd + 2);
+  ctx.strokeStyle = 'rgba(0,212,255,0.1)';
+  ctx.fillStyle = 'rgba(0,212,255,0.35)';
+  ctx.font = '10px Courier New';
+  for (const spd of rings) {
+    const r = spd * scale;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI);
+    ctx.stroke();
+    ctx.fillText(spd+'kts', cx + r + 3, cy + 2);
+  }
+
+  // Grid lines (angle spokes)
+  ctx.strokeStyle = 'rgba(0,212,255,0.07)';
+  for (let a = 0; a <= 180; a += 30) {
+    const rad = (a - 90) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(rad)*R, cy + Math.sin(rad)*R);
+    ctx.stroke();
+    // angle labels
+    ctx.fillStyle = 'rgba(107,143,168,0.8)';
+    ctx.font = '9px Courier New';
+    const lx = cx + Math.cos(rad)*(R+12);
+    const ly = cy + Math.sin(rad)*(R+12);
+    ctx.fillText(a+'°', lx-8, ly+4);
+  }
+
+  // Check if we have any data
+  const hasData = sessions.length > 0;
+
+  if (!hasData) {
+    ctx.fillStyle = 'rgba(107,143,168,0.6)';
+    ctx.font = '12px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data recorded yet', cx, cy + R/2);
+    ctx.textAlign = 'left';
+    return;
+  }
+
+  // Draw polar curves
+  for (let bi = 0; bi < TWS_BANDS.length; bi++) {
+    const data = bandData[bi];
+    if (data.every(v => v === 0)) continue;
+
+    ctx.beginPath();
+    ctx.strokeStyle = COLORS[bi];
+    ctx.lineWidth = 2;
+    let first = true;
+    for (let ti = 0; ti < TWA_STEPS.length; ti++) {
+      const twa = TWA_STEPS[ti];
+      const spd = data[ti];
+      if (spd === 0) { first = true; continue; }
+      const rad = (twa - 90) * Math.PI / 180;
+      const r = spd * scale;
+      const px = cx + Math.cos(rad) * r;
+      const py = cy + Math.sin(rad) * r;
+      if (first) { ctx.moveTo(px, py); first = false; }
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    // Dots for data points
+    for (let ti = 0; ti < TWA_STEPS.length; ti++) {
+      const twa = TWA_STEPS[ti];
+      const spd = data[ti];
+      if (spd === 0) continue;
+      const rad = (twa - 90) * Math.PI / 180;
+      const r = spd * scale;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(rad)*r, cy + Math.sin(rad)*r, 3, 0, 2*Math.PI);
+      ctx.fillStyle = COLORS[bi];
+      ctx.fill();
+    }
+  }
+
+  // Legend
+  const legendEl = document.getElementById('polar-legend');
+  legendEl.innerHTML = '';
+  for (let bi = 0; bi < TWS_BANDS.length; bi++) {
+    const data = bandData[bi];
+    if (data.every(v => v === 0)) continue;
+    legendEl.innerHTML += `
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:${COLORS[bi]}"></div>
+        ${TWS_BANDS[bi]}kts TWS
+      </div>`;
+  }
+}
+
+// ============================================================
+// TABLE
+// ============================================================
+function renderTable() {
+  const thead = document.querySelector('#polar-table thead');
+  const tbody = document.querySelector('#polar-table tbody');
+
+  const headers = ['TWA \\ TWS', ...TWS_BANDS.map(t => t+'kts')];
+  thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+
+  let html = '';
+  for (const twa of TWA_STEPS) {
+    const cells = TWS_BANDS.map(tws => getBestSog(tws, twa, '', ''));
+    const maxCell = Math.max(...cells);
+    const row = cells.map(v => {
+      if (v === 0) return '<td style="color:rgba(107,143,168,0.3)">—</td>';
+      const cls = v === maxCell && v > 0 ? 'class="best"' : '';
+      return `<td ${cls}>${v.toFixed(1)}</td>`;
+    });
+    html += `<tr><td class="twa-col">${twa}°</td>${row.join('')}</tr>`;
+  }
+  tbody.innerHTML = html || '<tr><td colspan="6" style="color:var(--muted);padding:20px;text-align:center">No data yet</td></tr>';
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV() {
+  const rows = [['TWA', ...TWS_BANDS.map(t => t+'kts TWS')]];
+  for (const twa of TWA_STEPS) {
+    rows.push([twa, ...TWS_BANDS.map(tws => getBestSog(tws, twa, '', '') || '')]);
+  }
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'polars_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('CSV downloaded');
+}
+
+// ============================================================
+// LOG
+// ============================================================
+function renderLog() {
+  const el = document.getElementById('log-list');
+  if (!sessions.length) {
+    el.innerHTML = '<div class="empty-state">No sessions recorded yet.<br>Head to the Record tab to start.</div>';
+    return;
+  }
+  const sorted = [...sessions].reverse();
+  el.innerHTML = sorted.map((s, i) => {
+    const dt = new Date(s.ts);
+    const date = dt.toLocaleDateString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const extras = s.config.extras?.length ? ' + ' + s.config.extras.join(', ') : '';
+    return `
+      <div class="log-item" onclick="deleteSession(${s.id})">
+        <div class="log-item-header">
+          <span class="log-badge">${s.tws}kts TWS</span>
+          <span class="log-meta">${date}</span>
+        </div>
+        <div class="log-stats">
+          <div>Avg SOG: <strong>${s.avgSog.toFixed(1)}</strong></div>
+          <div>Max SOG: <strong>${s.maxSog.toFixed(1)}</strong></div>
+          <div>Avg TWA: <strong>${s.avgTwa}°</strong></div>
+          <div>n=${s.samples}</div>
+        </div>
+        <div class="log-meta" style="margin-top:4px">
+          ${s.config.main} | ${s.config.head}${extras}
+          &nbsp;&bull;&nbsp; <span style="color:#e24b4a;font-size:9px">tap to delete</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function deleteSession(id) {
+  if (!confirm('Delete this session?')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  localStorage.setItem('polar_sessions', JSON.stringify(sessions));
+  renderLog();
+  toast('Session deleted');
+}
+
+function clearAllData() {
+  if (!confirm('Clear ALL sessions? This cannot be undone.')) return;
+  sessions = [];
+  localStorage.removeItem('polar_sessions');
+  renderLog();
+  toast('All data cleared');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (isErr ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 2500);
+}
+
+// ============================================================
+// RESIZE
+// ============================================================
+window.addEventListener('resize', () => {
+  if (document.getElementById('tab-polar').classList.contains('active')) renderPolar();
+});
+
+// ============================================================
+// DEMO DATA (uncomment to test with sample data)
+// ============================================================
+function loadDemoData() {
+  const demo = [];
+  const cfgs = [{main:'Full',head:'J1',extras:[]},{main:'Full',head:'J2',extras:[]},{main:'R1',head:'J2',extras:[]}];
+  for (const tws of [8,12,16,20]) {
+    for (const cfg of cfgs.slice(0,1)) {
+      const pts = [];
+      for (const twa of TWA_STEPS) {
+        const base = tws * 0.78 * Math.sin(twa*Math.PI/180) * (0.9 + 0.3*Math.random());
+        const sog = Math.min(base, tws * 0.95) * (1 + 0.05*(Math.random()-0.5));
+        pts.push({sog: Math.max(0.5, sog), twa, tws, ts: Date.now()});
+      }
+      demo.push({
+        id: Date.now() + Math.random()*1000,
+        ts: new Date().toISOString(),
+        tws, avgTwa: 90,
+        avgSog: parseFloat((pts.reduce((a,b)=>a+b.sog,0)/pts.length).toFixed(2)),
+        maxSog: parseFloat(Math.max(...pts.map(p=>p.sog)).toFixed(2)),
+        samples: pts.length,
+        config: cfg,
+        data: pts
+      });
+    }
+  }
+  sessions = [...sessions, ...demo];
+  localStorage.setItem('polar_sessions', JSON.stringify(sessions));
+  toast('Demo data loaded! Check Polar & Table tabs.');
+}
+
+// Expose demo loader to console
+window.loadDemoData = loadDemoData;
+</script>
+</body>
+</html>
